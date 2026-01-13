@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✉️ Correo Temporal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #fafafa;
+            color: #333;
+        }
+        header { text-align: center; margin-bottom: 30px; }
+        .email-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        #email {
+            font-size: 1.2em;
+            font-weight: bold;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        #inbox { margin-top: 20px; }
+        .message {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+        }
+        .loading { color: #888; text-align: center; padding: 20px; }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>✉️ Correo Temporal</h1>
+        <p>Genera un correo efímero para recibir mensajes sin exponer tu identidad.</p>
+    </header>
+
+    <div class="email-box">
+        <div>Tu correo temporal:</div>
+        <div id="email">{{ email }}</div>
+        <button onclick="copyEmail()">Copiar</button>
+        <button onclick="newEmail()">Nuevo correo</button>
+    </div>
+
+    <button onclick="fetchInbox()">🔄 Actualizar Buzón</button>
+    <div id="inbox"></div>
+
+    <footer>
+        <p>Hecho con ❤️ | Datos gestionados por <a href="https://www.1secmail.com/" target="_blank">1secmail.com</a></p>
+    </footer>
+
+    <script>
+        const email = "{{ email }}";
+
+        function copyEmail() {
+            navigator.clipboard.writeText(email).then(() => {
+                alert("Correo copiado al portapapeles");
+            }).catch(err => {
+                console.error("No se pudo copiar:", err);
+            });
+        }
+
+        function newEmail() {
+            if (confirm("¿Crear un nuevo correo temporal? El actual se perderá.")) {
+                window.location.reload();
+            }
+        }
+
+        function fetchInbox() {
+            const inboxDiv = document.getElementById("inbox");
+            inboxDiv.innerHTML = '<p class="loading">Cargando correos...</p>';
+
+            fetch('/inbox')
+                .then(response => response.json())
+                .then(messages => {
+                    if (!Array.isArray(messages) || messages.length === 0) {
+                        inboxDiv.innerHTML = "<p>No hay correos aún.</p>";
+                        return;
+                    }
+
+                    let html = "<h3>📬 Correos recibidos (" + messages.length + ")</h3>";
+                    messages.forEach(msg => {
+                        const date = new Date(msg.date);
+                        html += `
+                            <div class="message">
+                                <strong>De:</strong> ${msg.from || 'Desconocido'}<br>
+                                <strong>Asunto:</strong> ${msg.subject || 'Sin asunto'}<br>
+                                <small>ID: ${msg.id} | ${date.toLocaleString()}</small>
+                            </div>
+                        `;
+                    });
+                    inboxDiv.innerHTML = html;
+                })
+                .catch(err => {
+                    inboxDiv.innerHTML = "<p>Error al cargar los correos. Inténtalo de nuevo.</p>";
+                    console.error(err);
+                });
+        }
+
+        // Cargar al inicio
+        fetchInbox();
+    </script>
+</body>
+</html>
